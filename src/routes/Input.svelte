@@ -1,6 +1,7 @@
 <script>
       import Svelecte from 'svelecte';
     //   import array from "$lib/osmfeatures.js";
+    import { mapboxToken } from '$lib/conf.js'
     import array from "$lib/osmfeatures_refined.js";
     import turfBuffer from '@turf/buffer';
   import turfBbox from '@turf/bbox';
@@ -8,9 +9,13 @@
   import osmtogeojson from 'osmtogeojson'
     // import turf from '@turf/helpers';
 import { map_center_store } from '$lib/stores';
+import { feature } from '@turf/helpers';
+import Geocoder from '$lib/geocoder/Geocoder.svelte';
 
 
     let geojson;
+
+    let current_label;
 
     let svelecte_array = array.array;
 
@@ -52,7 +57,7 @@ import { map_center_store } from '$lib/stores';
     // let bikeshareBboxString = bboxString;
     // let transitBboxString = bboxString;
 
-    var buffer = turfBuffer(point, 0.5, {units:'miles'});
+    var buffer = turfBuffer(point, 1, {units:'miles'});
     var bboxPolygon = turfBbox(buffer);
     var bbox = [bboxPolygon[1], bboxPolygon[0], bboxPolygon[3], bboxPolygon[2]];
     bbox = bbox.toString();
@@ -86,6 +91,8 @@ const overpass_results = await fetch_overpass.json();
 
   console.log(geojson);
 
+  current_label = selection.label;
+
 
     // var bikeshareBuffer = turfBuffer(point, 0.5, {units:'miles'});
     // var transitBuffer = turfBuffer(point, 0.5, {units:'miles'});
@@ -114,9 +121,24 @@ const overpass_results = await fetch_overpass.json();
 
     // let overpass_bikeshare_transit_query = `%2F*%0AThis+query+looks+for+nodes%2C+ways+and+relations+%0Awith+the+given+key%2Fvalue+combination.%0AChoose+your+region+and+hit+the+Run+button+above!%0A*%2F%0A%5Bout%3Ajson%5D%5Btimeout%3A25%5D%3B%0A%2F%2F+gather+results%0A(%0A++%2F%2F+query+part+for%3A+%E2%80%9Camenity%3Dbicycle_rental%E2%80%9D%0A++relation%5B%22route%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++node%5B%22amenity%22%3D%22bicycle_rental%22%5D(${bikeshareBboxString})%3B%0A++way%5B%22amenity%22%3D%22bicycle_rental%22%5D(${bikeshareBboxString})%3B%0A++relation%5B%22amenity%22%3D%22bicycle_rental%22%5D(${bikeshareBboxString})%3B%0A++node%5B%22shop%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++way%5B%22shop%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++relation%5B%22shop%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++node%5B%22public_transport%22%5D(${transitBboxString})%3B%0A++way%5B%22public_transport%22%5D(${transitBboxString})%3B%0A++relation%5B%22public_transport%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22tram%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22tram%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22tram%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22bus%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22bus%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22bus%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22train%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22train%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22train%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22subway%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22subway%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22subway%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22monorail%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22monorail%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22monorail%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22trolleybus%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22trolleybus%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22trolleybus%22%5D(${transitBboxString})%3B%0A)%3B%0A%2F%2F+print+results%0Aout+body%3B%0A%3E%3B%0Aout+skel+qt%3B`;
   }
+
+  function updateLocation(e) {
+    console.log(e);
+
+    const { result } = e.detail;
+
+    console.log(result);
+
+    $map_center_store.lat = result.center[1];
+    $map_center_store.lng = result.center[0];
+  }
 </script>
 
+<Geocoder placeholder={"Update location"} accessToken={mapboxToken} on:result={updateLocation}></Geocoder>
 
+<p>Location: {JSON.stringify($map_center_store)}</p>
+
+<br>
 <label for="amenity">What are you looking for?</label>
 <!-- <label for="country">Select a country</label> -->
 <Svelecte options={array.array}
@@ -160,3 +182,10 @@ const overpass_results = await fetch_overpass.json();
 {JSON.stringify(result)}
 {/each}
 {/if} -->
+
+{#if geojson?.type == "FeatureCollection"}
+<h4>{current_label}</h4>
+{#each geojson.features as feature}
+<li>{#if feature.properties?.name}{feature.properties.name}{#if feature.properties?.['addr:housenumber']}: {feature.properties['addr:housenumber']} {feature.properties['addr:street']}, {feature.properties['addr:city']}, {feature.properties['addr:state']}, {feature.properties['addr:postcode']}{:else} {feature.geometry.coordinates}{/if}{:else}{feature.geometry.coordinates}{/if}</li>
+{/each}
+{/if}
