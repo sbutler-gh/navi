@@ -322,24 +322,24 @@ console.log(mode);
 
 <svelte:head>
 
-  <title>Find Bikes and Transit Near You</title>
+  <title>Find what you're looking for</title>
 
   
-  <meta name="description" content="Find Bikes and Transit Near You">
+  <meta name="description" content="Find what you're looking for">
   
   <!-- Facebook Meta Tags -->
   <meta property="og:url" content="https://freego.netlify.app">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Find Bikes and Transit Near You">
-  <meta property="og:description" content="And start living car free!">
+  <meta property="og:title" content="Find what you're looking for">
+  <meta property="og:description" content="in the palm of your hand">
   <meta property="og:image" content="https://images.squarespace-cdn.com/content/v1/58a1c69f5016e176238a2ae8/1605195330050-OVDXMMS41AZ5J1NJH9KS/GSD-G2-clubhousefort.jpg">
   
   <!-- Twitter Meta Tags -->
   <meta name="twitter:card" content="summary_large_image">
   <meta property="twitter:domain" content="freego.netlify.app">
   <meta property="twitter:url" content="https://freego.netlify.app">
-  <meta name="twitter:title" content="Find Bikes and Transit Near You">
-  <meta name="twitter:description" content="And start living car free!">
+  <meta name="twitter:title" content="Find what you're looking for">
+  <meta name="twitter:description" content="in the palm of your hand">
   <meta name="twitter:image" content="https://images.squarespace-cdn.com/content/v1/58a1c69f5016e176238a2ae8/1605195330050-OVDXMMS41AZ5J1NJH9KS/GSD-G2-clubhousefort.jpg">
 </svelte:head>
 
