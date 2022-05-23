@@ -158,7 +158,7 @@ const overpass_results = await fetch_overpass.json();
   bind:readSelection={selection}
   bind:value={value}
   placeholder="Enter text"
-
+  virtualList="true"
 ></Svelecte>
 
 <button id="search" on:click={submitQuery}>Search</button>
