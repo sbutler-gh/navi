@@ -2,7 +2,8 @@
       import Svelecte from 'svelecte';
     //   import array from "$lib/osmfeatures.js";
     import { mapboxToken } from '$lib/conf.js'
-    import array from "$lib/osmfeatures_refined.js";
+    import data from "$lib/searchdata.js";
+    // import array from "$lib/osmfeatures_refined.js";
     import turfBuffer from '@turf/buffer';
   import turfBbox from '@turf/bbox';
   import turfBboxPolygon from '@turf/bbox-polygon';
@@ -17,10 +18,10 @@ import Geocoder from '$lib/geocoder/Geocoder.svelte';
 
     let current_label;
 
-    let svelecte_array = array.array;
+    // let svelecte_array = array.array;
 
-    console.log(array.array);
-    console.log(svelecte_array);
+    // console.log(array.array);
+    // console.log(svelecte_array);
 
   let selection = null;
   let value;
@@ -141,7 +142,7 @@ const overpass_results = await fetch_overpass.json();
 <br>
 <label for="amenity">What are you looking for?</label>
 <!-- <label for="country">Select a country</label> -->
-<Svelecte options={array.array}
+<Svelecte options={data}
   inputId="amenity"
   labelField="label"
   bind:readSelection={selection}
