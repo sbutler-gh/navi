@@ -18,6 +18,8 @@ import Geocoder from '$lib/geocoder/Geocoder.svelte';
 
     let current_label;
 
+    let loading_location = false;
+
     // let svelecte_array = array.array;
 
     // console.log(array.array);
@@ -27,6 +29,10 @@ import Geocoder from '$lib/geocoder/Geocoder.svelte';
   let value;
 
   async function submitQuery() {
+
+    loading_location = true;
+
+    document.getElementById('search').disabled = true;
 
     console.log($map_center_store.lat);
 
@@ -94,6 +100,10 @@ const overpass_results = await fetch_overpass.json();
 
   current_label = selection.label;
 
+  loading_location = false;
+
+  document.getElementById('search').disabled = false;
+
 
     // var bikeshareBuffer = turfBuffer(point, 0.5, {units:'miles'});
     // var transitBuffer = turfBuffer(point, 0.5, {units:'miles'});
@@ -151,7 +161,11 @@ const overpass_results = await fetch_overpass.json();
 
 ></Svelecte>
 
-<button on:click={submitQuery}>Search</button>
+<button id="search" on:click={submitQuery}>Search</button>
+
+{#if loading_location == true}
+<p><em>Loading results ...</em></p>
+{/if}
 
 <!-- {#each array as option}
 <p>&#123;
