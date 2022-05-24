@@ -29,7 +29,9 @@ body {
 }
 
 .svelecte {
-    max-width: 300px;
+	max-width: 75%;
+    width: 300px;
+	position: fixed;
   }
 
 h1,h2,h3{line-height:1.2}
