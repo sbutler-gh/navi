@@ -5,6 +5,8 @@
   import { map_center_store, selected_location_store, bikeshare_transit_store, points_prompt_store, bikeshare_store, transit_store, geojson_store } from "$lib/stores.js"
   import { get } from 'svelte/store';
   import Input from "./Input.svelte"
+  import { goto } from "$app/navigation";
+import { page } from "$app/stores"; 
 
   const { getMap, getMapbox } = getContext(contextKey)
   const map = getMap()
@@ -400,9 +402,15 @@ console.log(e);
   $map_center_store.lat = e.detail.center[1];
   $map_center_store.lng = e.detail.center[0];
 
-  $selected_location_store = $map_center_store
+  $selected_location_store = $map_center_store;
 
   map.setCenter($map_center_store);
+
+  $page.url.searchParams.set('lat', $selected_location_store.lat); 
+  $page.url.searchParams.set('lng', $selected_location_store.lng); 
+  history.replaceState({}, '', `${window.location.origin}${window.location.pathname}?${$page.url.searchParams.toString()}`);
+
+  // goto(`?${$page.url.searchParams.toString()}`);
 
 // dispatch('updatelocation', {
 //   center: e.detail.result.center

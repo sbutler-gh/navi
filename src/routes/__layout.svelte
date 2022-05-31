@@ -17,6 +17,8 @@ import bbox from "@turf/bbox";
 import { feature } from "@turf/helpers";
 import { contextKey } from '$lib/components.js'
 import Input from "./Input.svelte";
+import { goto } from "$app/navigation";
+import { page } from "$app/stores"; 
 
 
   // let prompt = "Imagine a place in your community.  A place that hasn't changed in a very long time.  You're going there to take a picture.  Once you arrive, you drop your camera — you reach down for it, and when you stand back up, you are 50 years in the future.  What do you see?  How has this place changed?"
@@ -121,6 +123,12 @@ import Input from "./Input.svelte";
     $selected_location_store = center;
 
     unique = {};
+
+    $page.url.searchParams.set('lat', $selected_location_store.lat); 
+    $page.url.searchParams.set('lng', $selected_location_store.lng); 
+    history.replaceState({}, '', `${window.location.origin}${window.location.pathname}?${$page.url.searchParams.toString()}`);
+
+    // goto(`?${$page.url.searchParams.toString()}`);
     }
 
 function selectLocation({detail}) {
@@ -199,6 +207,13 @@ function selectLocation({detail}) {
 //    let marker_position = marker.getBoundingClientRect();
 //    console.log(marker_position);
 //  }
+
+$page.url.searchParams.set('lat', $selected_location_store.lat); 
+$page.url.searchParams.set('lng', $selected_location_store.lng); 
+
+history.replaceState({}, '', `${window.location.origin}${window.location.pathname}?${$page.url.searchParams.toString()}`);
+
+//  goto(`?${$page.url.searchParams.toString()}`);
 
 
 }

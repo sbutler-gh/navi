@@ -13,12 +13,16 @@ import { map_center_store, params_store, geojson_store, selected_location_store 
 import { feature } from '@turf/helpers';
 import Geocoder from '$lib/geocoder/Geocoder.svelte';
 import { createEventDispatcher, onMount} from 'svelte';
+import { goto } from "$app/navigation";
+import { page } from "$app/stores"; 
 
 
 
 const dispatch = createEventDispatcher();
 
     let geojson;
+
+    let last_search = [];
 
     let copy_tooltip = false;
 
@@ -80,6 +84,10 @@ const dispatch = createEventDispatcher();
         ]
       }
     }
+
+    last_search.lat = $selected_location_store.lat;
+    last_search.lng = $selected_location_store.lng;
+
     // point.geomType = "point";
     // console.log(point);
     // var buffer = turfBuffer(point, 0.25, {units:'miles'});
@@ -103,6 +111,8 @@ const dispatch = createEventDispatcher();
 
     let key = selection.key;
     let value = selection.value;
+
+    
 
     let overpass_query = `%2F*%0AThis+query+looks+for+nodes%2C+ways+and+relations+%0Awith+the+given+key%2Fvalue+combination.%0AChoose+your+region+and+hit+the+Run+button+above!%0A*%2F%0A%5Bout%3Ajson%5D%5Btimeout%3A25%5D%3B%0A%2F%2F+gather+results%0A(%0A++%2F%2F+query+part+for%3A+%E2%80%9Camenity%3Dbicycle_rental%E2%80%9D%0A++nwr%5B%22${key}%22%3D%22${value}%22%5D(${bbox})%3B%0A)%3B%0A%2F%2F+print+results%0Aout+body%3B%0A%3E%3B%0Aout+skel+qt%3B`;
 
@@ -142,32 +152,12 @@ const overpass_results = await fetch_overpass.json();
 	});
 
 
-    // var bikeshareBuffer = turfBuffer(point, 0.5, {units:'miles'});
-    // var transitBuffer = turfBuffer(point, 0.5, {units:'miles'});
+  $page.url.searchParams.set('key', selection.key); 
+  $page.url.searchParams.set('value', selection.value); 
 
+  history.replaceState({}, '', `${window.location.origin}${window.location.pathname}?${$page.url.searchParams.toString()}`);
+  //   goto(`?${$page.url.searchParams.toString()}`);
 
-    // // var buffered = turfBuffer(point, 20, {units:'miles'});
-    // var bikeshareBbox = turfBbox(bikeshareBuffer);
-    // var transitBbox = turfBbox(transitBuffer);
-
-    // // let bbox_polygon = turfBboxPolygon(bbox_raw);
-    // // console.log(turfBboxPolygon(bbox_raw));
-
-    // let geometry_xml;
-
-    // // console.log(bbox_raw);
-
-    // let bikeshareBboxReordered = [bikeshareBbox[1], bikeshareBbox[0], bikeshareBbox[3], bikeshareBbox[2]];
-
-    // let transitBboxReordered = [transitBbox[1], transitBbox[0], transitBbox[3], transitBbox[2]];
-
-    // let bikeshareBboxString = bikeshareBboxReordered.toString();
-    // bikeshareBboxString = bikeshareBboxString.replace(/,/g, '%2C');
-
-    // let transitBboxString = transitBboxReordered.toString();
-    // transitBboxString = transitBboxString.replace(/,/g, '%2C');
-
-    // let overpass_bikeshare_transit_query = `%2F*%0AThis+query+looks+for+nodes%2C+ways+and+relations+%0Awith+the+given+key%2Fvalue+combination.%0AChoose+your+region+and+hit+the+Run+button+above!%0A*%2F%0A%5Bout%3Ajson%5D%5Btimeout%3A25%5D%3B%0A%2F%2F+gather+results%0A(%0A++%2F%2F+query+part+for%3A+%E2%80%9Camenity%3Dbicycle_rental%E2%80%9D%0A++relation%5B%22route%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++node%5B%22amenity%22%3D%22bicycle_rental%22%5D(${bikeshareBboxString})%3B%0A++way%5B%22amenity%22%3D%22bicycle_rental%22%5D(${bikeshareBboxString})%3B%0A++relation%5B%22amenity%22%3D%22bicycle_rental%22%5D(${bikeshareBboxString})%3B%0A++node%5B%22shop%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++way%5B%22shop%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++relation%5B%22shop%22%3D%22bicycle%22%5D(${bikeshareBboxString})%3B%0A++node%5B%22public_transport%22%5D(${transitBboxString})%3B%0A++way%5B%22public_transport%22%5D(${transitBboxString})%3B%0A++relation%5B%22public_transport%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22tram%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22tram%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22tram%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22bus%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22bus%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22bus%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22train%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22train%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22train%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22subway%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22subway%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22subway%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22monorail%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22monorail%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22monorail%22%5D(${transitBboxString})%3B%0A++node%5B%22route%22%3D%22trolleybus%22%5D(${transitBboxString})%3B%0A++way%5B%22route%22%3D%22trolleybus%22%5D(${transitBboxString})%3B%0A++relation%5B%22route%22%3D%22trolleybus%22%5D(${transitBboxString})%3B%0A)%3B%0A%2F%2F+print+results%0Aout+body%3B%0A%3E%3B%0Aout+skel+qt%3B`;
   }
 
   function updateLocation(e) {
@@ -184,7 +174,11 @@ const overpass_results = await fetch_overpass.json();
     console.log($selected_location_store.lat);
     console.log(selection);
 
-let params = `lat=${$selected_location_store.lat}&lng=${$selected_location_store.lng}&key=${selection.key}&value=${selection.value}`;
+    // Reset the selected location marker, so we understand where the results are being shared from
+    $selected_location_store.lat = last_search.lat;
+    $selected_location_store.lng = last_search.lng;
+
+let params = `lat=${last_search.lat}&lng=${last_search.lng}&key=${selection.key}&value=${selection.value}`;
 
 console.log(params);
 
@@ -211,7 +205,15 @@ if (!navigator.clipboard){
               function() {
                   console.log("Couldn't copy, try right-clicking to copy the URL isntead."); // error
               });
-      }  
+      } 
+      
+  $page.url.searchParams.set('lat', $selected_location_store.lat); 
+  $page.url.searchParams.set('lng', $selected_location_store.lng); 
+  $page.url.searchParams.set('key', selection.key); 
+  $page.url.searchParams.set('value', selection.value); 
+
+  history.replaceState({}, '', `${window.location.origin}${window.location.pathname}?${$page.url.searchParams.toString()}`);
+  // goto(`?${$page.url.searchParams.toString()}`);
 }
 </script>
 
