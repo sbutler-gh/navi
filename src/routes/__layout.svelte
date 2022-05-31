@@ -560,7 +560,7 @@ function updateLocation(e) {
   <meta name="description" content="Find what you're looking for">
   
   <!-- Facebook Meta Tags -->
-  <meta property="og:url" content="https://freego.netlify.app">
+  <meta property="og:url" content="https://rebrand.ly/wefind">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Find what you're looking for">
   <meta property="og:description" content="in the palm of your hand">
@@ -568,8 +568,8 @@ function updateLocation(e) {
   
   <!-- Twitter Meta Tags -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta property="twitter:domain" content="freego.netlify.app">
-  <meta property="twitter:url" content="https://freego.netlify.app">
+  <meta property="twitter:domain" content="rebrand.ly/wefind">
+  <meta property="twitter:url" content="https:/rebrand.ly/wefind">
   <meta name="twitter:title" content="Find what you're looking for">
   <meta name="twitter:description" content="in the palm of your hand">
   <meta name="twitter:image" content="https://images.squarespace-cdn.com/content/v1/58a1c69f5016e176238a2ae8/1605195330050-OVDXMMS41AZ5J1NJH9KS/GSD-G2-clubhousefort.jpg">

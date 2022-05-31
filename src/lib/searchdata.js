@@ -161,7 +161,7 @@ let data = [
   
   { "key": "amenity", "value": "events_venue", "label": "Events venue", "keywords": "", "category": "Entertainment, Arts, & Culture" },
   
-  { "key": "amenity", "value": "fountain", "label": "Fountain", "keywords": "water public", "category": "Entertainment, Arts, & Culture" },
+  { "key": "amenity", "value": "fountain", "label": "Public fountain", "keywords": "water public sight", "category": "Entertainment, Arts, & Culture" },
   
   { "key": "amenity", "value": "gambling", "label": "Gambling", "keywords": "gambling", "category": "Entertainment, Arts, & Culture" },
   
@@ -209,7 +209,7 @@ let data = [
   
   { "key": "amenity", "value": "dog_toilet", "label": "Dog toilet", "keywords": "", "category": "Facilities" },
   
-  { "key": "amenity", "value": "drinking_water", "label": "Drinking water", "keywords": "fill refill station water", "category": "Facilities" },
+  { "key": "amenity", "value": "drinking_water", "label": "Drinking water", "keywords": "fill refill station water fountain", "category": "Facilities" },
   
   { "key": "amenity", "value": "give_box", "label": "Give box", "keywords": "give gift library public", "category": "Facilities" },
   
@@ -763,7 +763,7 @@ let data = [
   
   { "key": "emergency", "value": "siren", "label": "Siren", "keywords": "", "category": "Other structure" },
   
-  { "key": "emergency", "value": "drinking_water", "label": "Drinking water", "keywords": "", "category": "Other structure" },
+  { "key": "emergency", "value": "drinking_water", "label": "Drinking water (emergency)", "keywords": "emergency water fill fountain", "category": "Other structure" },
   
   { "key": "geological", "value": "moraine", "label": "Moraine", "keywords": "", "category": "Geological" },
   
