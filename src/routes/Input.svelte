@@ -115,7 +115,7 @@ const overpass_results = await fetch_overpass.json();
   document.getElementById('search').disabled = false;
 
   dispatch('updatecontent', {
-
+    current_label: current_label
 	});
 
 
@@ -236,12 +236,16 @@ const overpass_results = await fetch_overpass.json();
   {#each geojson.features as feature}
   {#if feature.properties?.name}
   <h3 class="name" style="font-weight: bold; font-size: 16px;">{feature.properties?.name}</h3>
+  {:else}
+  {current_label}
   {/if}
   {#if feature.properties?.cuisine}
   <p style="font-style: italic">{feature.properties?.cuisine.charAt(0).toUpperCase()}{feature.properties?.cuisine.slice(1).replace(/_/g, " ")}</p>
   {/if}
   {#if feature.properties?.['addr:housenumber']}
   <p>{feature.properties?.['addr:housenumber']} {feature.properties?.['addr:street']}, {feature.properties?.['addr:city']}, {feature.properties?.['addr:postcode']} </p>
+  {:else}
+  <p><em>Lat: {feature.geometry?.coordinates[1]}, Lng: {feature.geometry?.coordinates[0]}</em></p>
   {/if}
   {#if feature.properties?.website}
   <p><a href={feature.properties?.website} target="_blank">{feature.properties?.website}</a></p>

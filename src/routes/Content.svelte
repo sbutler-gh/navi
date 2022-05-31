@@ -13,6 +13,8 @@
 
   let load = false;
 
+  let current_label;
+
   // Add a new source from our GeoJSON data and set the
   // 'cluster' option to true. GL-JS will add the point_count property to your source data.
 
@@ -387,7 +389,7 @@ function addPopup(e, coordinates) {
           // The miniscroller component is what appears in the popup, and we instantiate it with props from the selected point (most importantly, content) so we can show the content from that point in the popup.
     new MiniScroller({ 
       target: document.getElementById('mini-scroller'), 
-      props: {properties:e.features[0]._vectorTileFeature.properties  } 
+      props: {current_label:current_label, coordinates:e.features[0].geometry.coordinates, properties:e.features[0]._vectorTileFeature.properties  } 
      }) // eslint-disable-line no-new
 }
 
@@ -409,9 +411,11 @@ console.log(e);
 
 }
 
-function updateContent() {
+function updateContent(e) {
 
   console.log('updating content');
+
+  current_label = e.detail.current_label;
 
   if (map.getLayer('pois')) {
       map.removeLayer('pois'); 
