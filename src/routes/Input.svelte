@@ -9,16 +9,21 @@
   import turfBboxPolygon from '@turf/bbox-polygon';
   import osmtogeojson from 'osmtogeojson'
     // import turf from '@turf/helpers';
-import { map_center_store, geojson_store, selected_location_store } from '$lib/stores';
+import { map_center_store, params_store, geojson_store, selected_location_store } from '$lib/stores';
 import { feature } from '@turf/helpers';
 import Geocoder from '$lib/geocoder/Geocoder.svelte';
-import { createEventDispatcher} from 'svelte';
+import { createEventDispatcher, onMount} from 'svelte';
 
 
 
 const dispatch = createEventDispatcher();
 
     let geojson;
+
+    let copy_tooltip = false;
+
+    // Variable to indicate if map component is not displayed, due to data /performance issues
+    let no_map = false;
 
     let list_view = false;
 
@@ -35,6 +40,24 @@ const dispatch = createEventDispatcher();
 
   let selection = null;
   let value;
+
+  onMount(() => {
+
+    if ($params_store?.key || $params_store?.value) {
+
+      selection = [];
+
+      $params_store?.key ? selection.key = $params_store?.key : null;
+      $params_store?.value ? selection.value = $params_store?.value : null;
+
+      value = selection.value;
+
+      console.log(selection.key + selection.value);
+
+      submitQuery();
+    }
+
+  })
 
   async function submitQuery() {
 
@@ -154,9 +177,42 @@ const overpass_results = await fetch_overpass.json();
     dispatch('updatelocation', {
 			center: e.detail.result.center
 	});
-
-
   }
+
+  function shareResults() {
+
+    console.log($selected_location_store.lat);
+    console.log(selection);
+
+let params = `lat=${$selected_location_store.lat}&lng=${$selected_location_store.lng}&key=${selection.key}&value=${selection.value}`;
+
+console.log(params);
+
+let updated_params = encodeURI(params);
+
+let url = `${window.location.origin}${window.location.pathname}?${updated_params}`
+
+if (!navigator.clipboard){
+          // use old commandExec() way
+          url.select();
+          // window.location.setSelectionRange(0, 99999)
+          document.execCommand("copy");
+          copy_tooltip = true;
+          setTimeout(function(){ copy_tooltip = false }, 2000)
+
+      } else{
+          navigator.clipboard.writeText(url).then(
+              function(){
+                  console.log("Copied URL");
+                  copy_tooltip = true;
+                  setTimeout(function(){ copy_tooltip = false }, 2000)
+              })
+              .catch(
+              function() {
+                  console.log("Couldn't copy, try right-clicking to copy the URL isntead."); // error
+              });
+      }  
+}
 </script>
 
 {#if !geocoder}
@@ -227,12 +283,40 @@ const overpass_results = await fetch_overpass.json();
 
 {#if !list_view}
 <a style="text-decoration: underline; color: blue; cursor: pointer;" on:click|preventDefault={function()  {list_view = true }}><em>View as list</em></a>
+<span> — </span>
+<a style="color: blue; cursor: pointer;" on:click|preventDefault={shareResults}>
+  <svg style="vertical-align: sub;" xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-share" width="16" height="16" viewBox="0 0 24 24" stroke-width="1.5" stroke="#000000" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <circle cx="6" cy="12" r="3" />
+  <circle cx="18" cy="6" r="3" />
+  <circle cx="18" cy="18" r="3" />
+  <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" />
+  <line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
+</svg> <span style="text-decoration: underline">Share results</span></a>
+{#if copy_tooltip}
+<span style="width: fit-content; display: block; margin: auto; margin-top: 5px; white-space: nowrap; background: lightgrey; text-align: center; border-radius: 20px; padding: 5px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);" class="bg-gray-100 text-center rounded absolute p-1 shadow">Copied Link!</span>
+{/if}
 {/if}
 
 {#if list_view}
 <div id="list-view" style="position: fixed; z-index: 200; height: 100%; width: 100%; background: white; top: 0; left: 0; padding-left: 20px; padding-top: 10px; overflow-y: scroll;">
   <button style="margin-left: -10px;" on:click|preventDefault={function()  {list_view = false} }>Return to map</button>
   <p><em>{geojson?.features.length} results below</em></p>
+  {#if no_map}
+  <p></p><span> — </span>
+<a style="color: blue; cursor: pointer;" on:click|preventDefault={shareResults}>
+  <svg style="vertical-align: sub;" xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-share" width="16" height="16" viewBox="0 0 24 24" stroke-width="1.5" stroke="#000000" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <circle cx="6" cy="12" r="3" />
+  <circle cx="18" cy="6" r="3" />
+  <circle cx="18" cy="18" r="3" />
+  <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" />
+  <line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
+</svg> <span style="text-decoration: underline">Share results</span></a>
+{#if copy_tooltip}
+<span style="width: fit-content; display: block; margin: auto; margin-top: 5px; white-space: nowrap; background: lightgrey; text-align: center; border-radius: 20px; padding: 5px; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);" class="bg-gray-100 text-center rounded absolute p-1 shadow">Copied Link!</span>
+{/if}
+{/if}
   {#each geojson.features as feature}
   {#if feature.properties?.name}
   <h3 class="name" style="font-weight: bold; font-size: 16px;">{feature.properties?.name}</h3>
@@ -244,7 +328,7 @@ const overpass_results = await fetch_overpass.json();
   {/if}
   {#if feature.properties?.['addr:housenumber']}
   <p>{feature.properties?.['addr:housenumber']} {feature.properties?.['addr:street']}, {feature.properties?.['addr:city']}, {feature.properties?.['addr:postcode']} </p>
-  {:else}
+  {:else if !feature.properties?.name}
   <p><em>Lat: {feature.geometry?.coordinates[1]}, Lng: {feature.geometry?.coordinates[0]}</em></p>
   {/if}
   {#if feature.properties?.website}
@@ -284,5 +368,6 @@ const overpass_results = await fetch_overpass.json();
 
   #list-view .name {
     margin-top: 2em;
+    margin-bottom: 0.75em;
   }
 </style>

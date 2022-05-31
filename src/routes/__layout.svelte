@@ -25,6 +25,8 @@ import Input from "./Input.svelte";
 
   let pois = [];
 
+  export let params;
+
   let poi_mode;
   let poi_purpose;
   let poi_passengers;
@@ -78,6 +80,18 @@ import Input from "./Input.svelte";
 
    // We take the user's IP, get coordinates from it (an approximate location — usually the data center nearest them), and update the map location to those coordinates.
    async function ipToCoordinates() {
+
+    let coordinates;
+
+    // If the page was shared and has parameters indicating location, we do that first
+    if (params.lat && params.lng) {
+
+      coordinates = {"lat": params.lat, "lng": params.lng};
+
+    }
+    
+    else {
+
     
     const ip = await fetch("https://serene-journey-42564.herokuapp.com/https://api.ipify.org?format=json&callback=getIP");
     
@@ -96,10 +110,12 @@ import Input from "./Input.svelte";
     
     console.log(json);
     
-    let coordinates = json.loc.split(',');
+    coordinates = json.loc.split(',');
     console.log(coordinates);
     coordinates = {"lat": coordinates[0], "lng": coordinates[1]};
     // coordinates = {"lat": 38.886503, "lng": -77.1842802};
+    }
+
     center = coordinates;
     $map_center_store = center;
     $selected_location_store = center;
@@ -546,60 +562,36 @@ function updateLocation(e) {
 
 <!-- This script runs first, as soon as the page is loaded, before anything in the script tag above -->
 <!-- The very first thing we do is load data from the backend, so we can populate the map with it -->
-<!-- <script context="module">
+<script context="module">
 
-  let original = true;
+import { params_store } from '$lib/stores';
 
-  // ipToCoordinates();
+export const load = async ({ url, params }) => {
 
-  export const load = async ({ fetch, url }) => {
+console.log(url);
+console.log(params);
+let urlparams = [];
 
-       // We take the user's IP, get coordinates from it (an approximate location — usually the data center nearest them), and update the map location to those coordinates.
-    
-    const ip = await fetch("https://serene-journey-42564.herokuapp.com/https://api.ipify.org?format=json&callback=getIP");
-    
-    const ip_json = await ip.json();
-    console.log(ip_json);
-    
-    const request = await fetch(`https://serene-journey-42564.herokuapp.com/ipinfo.io/${ip_json["ip"]}/geo?token=${variables.ipInfo}`, {
-        method: 'GET',
-        "Content-Type": "application/json",
-        "charset": "utf-8",
-        "Access-Control-Allow-Headers": "X-Requested-With",
-        "X-Requested-With": "XMLHttpRequest"   
-    });
+  // If there is a parameter in the URL;
+  if (url.search) {
 
-    if (request.ok) {
+    console.log('hit');
+  let str = new URLSearchParams(url.search);
+  urlparams = Object.fromEntries(str.entries());
+  console.log(urlparams);
 
-    const json = await request.json()
-    
-    console.log(json);
-    
-    let coordinates = json.loc.split(',');
-    coordinates = {"lat": 38.886503, "lng": -77.1842802};
-    center = coordinates;
-    map_center_store.set(center);
-
-			return {
-				props: { 
-          center: center
-        }
-			};
-		}
-
-    else {
-      console.log(request);
-    }
-
-		const { message } = await response.json();
-
-		return {
-			error: new Error(message)
-		};
-
+  params_store.set(urlparams);
   }
+
+
+return {
+  props: { 
+    params: urlparams
+  }
+};
+}
   
-</script> -->
+</script>
 
 {#if center?.lng}
 <div class="section-txt" id="map">
