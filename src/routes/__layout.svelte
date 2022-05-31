@@ -218,9 +218,9 @@ history.replaceState({}, '', `${window.location.origin}${window.location.pathnam
 
 }
 
-function navigate (next) {
-    page = next
-  }
+// function navigate (next) {
+//     page = next
+//   }
 
   function placeChanged (e) {
     const { result } = e.detail
