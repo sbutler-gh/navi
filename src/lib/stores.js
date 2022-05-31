@@ -26,4 +26,6 @@ let bikeshare_transit_store = writable();
 
 let geojson_store = writable();
 
-export { bikeshare_store, bikeshare_transit_store, transit_store, geojson_store, user_store, points_store, prompts_store, points_prompt_store, current_prompt_store, map_center_store, route_store };
+let selected_location_store = writable()
+
+export { bikeshare_store, selected_location_store, bikeshare_transit_store, transit_store, geojson_store, user_store, points_store, prompts_store, points_prompt_store, current_prompt_store, map_center_store, route_store };

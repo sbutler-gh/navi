@@ -9,12 +9,20 @@
   import turfBboxPolygon from '@turf/bbox-polygon';
   import osmtogeojson from 'osmtogeojson'
     // import turf from '@turf/helpers';
-import { map_center_store } from '$lib/stores';
+import { map_center_store, geojson_store, selected_location_store } from '$lib/stores';
 import { feature } from '@turf/helpers';
 import Geocoder from '$lib/geocoder/Geocoder.svelte';
+import { createEventDispatcher} from 'svelte';
 
+
+
+const dispatch = createEventDispatcher();
 
     let geojson;
+
+    let list_view = false;
+
+    let geocoder = false;
 
     let current_label;
 
@@ -44,8 +52,8 @@ import Geocoder from '$lib/geocoder/Geocoder.svelte';
       "geometry": {
         "type": "Point",
         "coordinates": [
-          parseFloat($map_center_store.lng),
-          parseFloat($map_center_store.lat)
+          parseFloat($selected_location_store.lng),
+          parseFloat($selected_location_store.lat)
         ]
       }
     }
@@ -98,11 +106,17 @@ const overpass_results = await fetch_overpass.json();
 
   console.log(geojson);
 
+  $geojson_store = geojson
+
   current_label = selection.label;
 
   loading_location = false;
 
   document.getElementById('search').disabled = false;
+
+  dispatch('updatecontent', {
+
+	});
 
 
     // var bikeshareBuffer = turfBuffer(point, 0.5, {units:'miles'});
@@ -134,30 +148,39 @@ const overpass_results = await fetch_overpass.json();
   }
 
   function updateLocation(e) {
+
     console.log(e);
 
-    const { result } = e.detail;
+    dispatch('updatelocation', {
+			center: e.detail.result.center
+	});
 
-    console.log(result);
 
-    $map_center_store.lat = result.center[1];
-    $map_center_store.lng = result.center[0];
   }
 </script>
 
-<Geocoder placeholder={"Update location"} accessToken={mapboxToken} on:result={updateLocation}></Geocoder>
+{#if !geocoder}
+<a style="text-decoration: underline; color: blue; font-size: 14px; cursor: pointer;" on:click|preventDefault={function()  {document.getElementById('geocoder-div').style.display = "block"; geocoder = true; } }><em>Go to new location</em></a>
 
-<p>Location: {JSON.stringify($map_center_store)}</p>
+{:else}
+<a style="text-decoration: underline; color: grey; font-size: 14px; cursor: pointer;" on:click|preventDefault={function() {document.getElementById('geocoder-div').style.display = "none"; geocoder = false; }}><em>Hide</em></a>
+{/if}
+
+<div id="geocoder-div" style="display: none;">
+<Geocoder placeholder={"Enter new location"} accessToken={mapboxToken} on:result={updateLocation}></Geocoder>
+</div>
+
+<!-- <p>Location: {JSON.stringify($map_center_store)}</p> -->
 
 <br>
-<label for="amenity">What are you looking for?</label>
+<p style="font-size: 14px">What are you looking for?</p>
 <!-- <label for="country">Select a country</label> -->
 <Svelecte options={data}
   inputId="amenity"
   labelField="label"
   bind:readSelection={selection}
   bind:value={value}
-  placeholder="Enter text"
+  placeholder="Enter search"
   virtualList="true"
 ></Svelecte>
 
@@ -199,8 +222,63 @@ const overpass_results = await fetch_overpass.json();
 {/if} -->
 
 {#if geojson?.type == "FeatureCollection"}
-<h4>{current_label}</h4>
-{#each geojson.features as feature}
-<li>{#if feature.properties?.name}{feature.properties.name}{#if feature.properties?.['addr:housenumber']}: {feature.properties['addr:housenumber']} {feature.properties['addr:street']}, {feature.properties['addr:city']}, {feature.properties['addr:state']}, {feature.properties['addr:postcode']}{:else} {feature.geometry.coordinates}{/if}{:else}{feature.geometry.coordinates}{/if}</li>
-{/each}
+<!-- <h4>{current_label}</h4> -->
+<em>{geojson?.features.length} results /</em>
+
+{#if !list_view}
+<a style="text-decoration: underline; color: blue; cursor: pointer;" on:click|preventDefault={function()  {list_view = true }}><em>View as list</em></a>
 {/if}
+
+{#if list_view}
+<div id="list-view" style="position: fixed; z-index: 200; height: 100%; width: 100%; background: white; top: 0; left: 0; padding-left: 20px; padding-top: 10px; overflow-y: scroll;">
+  <button style="margin-left: -10px;" on:click|preventDefault={function()  {list_view = false} }>Return to map</button>
+  <p><em>{geojson?.features.length} results below</em></p>
+  {#each geojson.features as feature}
+  {#if feature.properties?.name}
+  <h3 class="name" style="font-weight: bold; font-size: 16px;">{feature.properties?.name}</h3>
+  {/if}
+  {#if feature.properties?.cuisine}
+  <p style="font-style: italic">{feature.properties?.cuisine.charAt(0).toUpperCase()}{feature.properties?.cuisine.slice(1).replace(/_/g, " ")}</p>
+  {/if}
+  {#if feature.properties?.['addr:housenumber']}
+  <p>{feature.properties?.['addr:housenumber']} {feature.properties?.['addr:street']}, {feature.properties?.['addr:city']}, {feature.properties?.['addr:postcode']} </p>
+  {/if}
+  {#if feature.properties?.website}
+  <p><a href={feature.properties?.website} target="_blank">{feature.properties?.website}</a></p>
+  {/if}
+  {#if feature.properties?.phone}
+  <p><a href="tel:{feature.properties?.phone}">{feature.properties?.phone}</a></p>
+  {/if}
+{/each}
+</div>
+{/if}
+<!-- {#each geojson.features as feature}
+  {#if feature.properties?.name}
+  <p style="font-weight: bold">{feature.properties?.name}</p>
+  {/if}
+  {#if feature.properties?.cuisine}
+  <p style="font-style: italic">{feature.properties?.cuisine.charAt(0).toUpperCase()}{feature.properties?.cuisine.slice(1).replace(/_/g, " ")}</p>
+  {/if}
+  {#if feature.properties?.['addr:housenumber']}
+  <p>{feature.properties?.['addr:housenumber']} {feature.properties?.['addr:street']}, {feature.properties?.['addr:city']}, {feature.properties?.['addr:postcode']} </p>
+  {/if}
+  {#if feature.properties?.website}
+  <p><a href={feature.properties?.website} target="_blank">{feature.properties?.website}</a></p>
+  {/if}
+{/each} -->
+{/if}
+
+<style>
+  #list-view p {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+  }
+
+  #list-view h3:first-of-type {
+    margin-top: 0em !important;
+  }
+
+  #list-view .name {
+    margin-top: 2em;
+  }
+</style>

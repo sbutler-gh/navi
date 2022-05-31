@@ -1,9 +1,10 @@
 <script>
   import "../app.css";
-  import { geojson_store, bikeshare_transit_store, user_store, points_prompt_store, points_store, prompts_store, current_prompt_store, map_center_store, bikeshare_store, transit_store } from '$lib/stores';
+  import { geojson_store, selected_location_store, bikeshare_transit_store, user_store, points_prompt_store, points_store, prompts_store, current_prompt_store, map_center_store, bikeshare_store, transit_store } from '$lib/stores';
   import { mapboxToken } from '$lib/conf.js'
   import { Map, Geocoder, Marker, controls } from '$lib/components.js'
   import Content from './Content.svelte';
+  import map from './Content.svelte';
 import {afterUpdate, getContext, onMount, setContext} from 'svelte';
 import { get } from 'svelte/store';
   import { variables } from '$lib/variables';
@@ -22,8 +23,22 @@ import Input from "./Input.svelte";
 
   const { GeolocateControl, NavigationControl } = controls
 
+  let pois = [];
+
+  let poi_mode;
+  let poi_purpose;
+  let poi_passengers;
+  let poi_carry;
+
+  let screenX;
+  let screenY;
+
+  // $: screenX = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0].getBoundingClientRect().x;
+  // $: screenY = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0].getBoundingClientRect().y;
 
   let checked = true;
+
+  let poi_results;
 
   let loading = false;
 
@@ -32,7 +47,7 @@ import Input from "./Input.svelte";
   $: center = $map_center_store;
 
   let marker;
-  let zoom = 12;
+  let zoom = 14;
   let mapComponent;
 
   let create_mode = true;
@@ -87,24 +102,72 @@ import Input from "./Input.svelte";
     // coordinates = {"lat": 38.886503, "lng": -77.1842802};
     center = coordinates;
     $map_center_store = center;
+    $selected_location_store = center;
 
     unique = {};
     }
 
-function selectLocation( { detail }) {
+function selectLocation({detail}) {
+
+  // console.log(e);
+
+  screenX = "";
+  screenY = "";
+
+  // if (e?.clientX) {
+  //   screenX = e.clientX;
+  //   screenY = e.clientY;
+  //   console.log(screenX);
+  //   console.log(screenY);
+  // }
 
 // If create_mode is false, that means the user is just browsing the map and is not adding content.  In that case, we don't want to add a marker or update the center or anything when they click.
 // So we'll only run this function if create_mode is anything but false.  This likewise means, that if a user has selected a location already in the add content workflow and are entering the content, they are still able to click around on the map and update the location.  This seems like a user-friendly behavior from testing.
-if (mode == "selecting" || mode == "starting") {
+// if (mode == "selecting" || mode == "starting") {
 
   // Sometimes a click registers twice in svelte — meaning, the first click will give us (detail), and the second click will give us undefined.
   // If we tried doing the following when the click was undefined, it wouldn't work
   // So we specify to only get the location of the user's click and update the marker on the map when we actually have that information from the click (e.g. the first click, not the second undefined one that registers)
-  if (detail.lat) {
+  setTimeout(function() {
+
+  if (detail.lat && !document.getElementById('mini-scroller')) {
   console.log(detail);
   console.log(detail.lat);
-  selected_location = detail;
-  console.log(selected_location);
+  $selected_location_store = detail;
+  console.log($selected_location_store);
+
+    setTimeout(function(){
+
+
+    //   let marker = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0];
+    // let marker_position = marker?.getBoundingClientRect();
+    // console.log(marker_position);
+
+    screenX = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0].getBoundingClientRect().x;
+    screenY = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0].getBoundingClientRect().y;
+
+    }, 1);
+  }
+}, 10);
+
+  // screenX = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0].getBoundingClientRect().x;
+  // screenY = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0].getBoundingClientRect().y;
+
+  // if (e?.clientX == "undefined") {
+
+  // console.log(e?.clientX);
+  // let marker = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")?.[0];
+  // let marker_position = marker?.getBoundingClientRect();
+  // console.log(marker_position);
+
+  // if (marker_position?.x) {
+  //   console.log('true');
+  // }
+
+  // marker_position?.x ? function() {screenX = marker_position.x; screenY = marker_position.y} : null;
+
+  // console.log(screenX);
+  // }
   
   // If the map is somewhat zoomed out when the user clicks, we will zoom in on their click.
   // This is a bit jarring once you're already zoomed in close on the map, so we only have the behavior when the current zoom level is less than 16.
@@ -114,11 +177,14 @@ if (mode == "selecting" || mode == "starting") {
   // }
 
   // Finally, if create_mode is not yet in the "input_content" stage yet (when the user has the content text area form available), we will update it to that stage.
-  create_mode != "input_content" ? create_mode = "input_content" : null;
 
-  mode = "selecting";
-  }
-}
+//  if (selected_location) {
+//    let marker = document.getElementsByClassName("mapboxgl-marker mapboxgl-marker-anchor-center")[0];
+//    let marker_position = marker.getBoundingClientRect();
+//    console.log(marker_position);
+//  }
+
+
 }
 
 function navigate (next) {
@@ -173,8 +239,8 @@ function navigate (next) {
       "geometry": {
         "type": "Point",
         "coordinates": [
-          parseFloat(selected_location.lng),
-          parseFloat(selected_location.lat)
+          parseFloat($selected_location_store.lng),
+          parseFloat($selected_location_store.lat)
         ]
       }
     }
@@ -318,6 +384,141 @@ console.log(mode);
     // e.target.name
   }
 
+  async function findMapFeatures() {
+    // loading_location = true;
+
+document.getElementById('map-search').disabled = true;
+
+// console.log($map_center_store.lat);
+
+// console.log(selection);
+
+let screen_point = map.project($selected_location_store);
+
+console.log(screen_point);
+
+var point =     {
+  "type": "Feature",
+  "properties": {},
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      parseFloat($selected_location_store.lng),
+      parseFloat($selected_location_store.lat)
+    ]
+  }
+}
+// point.geomType = "point";
+// console.log(point);
+// var buffer = turfBuffer(point, 0.25, {units:'miles'});
+// var bbox = turfBbox(buffer);
+
+// let geometry_xml;
+
+// let bboxReordered = [bbox[1], bbox[0], bbox[3], bbox[2]];
+
+// let bboxString = bboxReordered.toString();
+// bboxString = bboxString.replace(/,/g, '%2C');
+
+// let bikeshareBboxString = bboxString;
+// let transitBboxString = bboxString;
+
+var buffer = turfBuffer(point, 0.1, {units:'kilometers'});
+var bboxPolygon = turfBbox(buffer);
+var bbox = [bboxPolygon[1], bboxPolygon[0], bboxPolygon[3], bboxPolygon[2]];
+bbox = bbox.toString();
+bbox = bbox.replace(/,/g, '%2C');
+
+// let key = selection.key;
+// let value = selection.value;
+
+let nodewayrelation = "node";
+let key = "name"
+let operator = "%22%3D%22$";
+let value = "";
+
+let overpass_query = `%2F*%0AThis+query+looks+for+nodes%2C+ways+and+relations+%0Awith+the+given+key%2Fvalue+combination.%0AChoose+your+region+and+hit+the+Run+button+above!%0A*%2F%0A%5Bout%3Ajson%5D%5Btimeout%3A25%5D%3B%0A%2F%2F+gather+results%0A(%0A++%2F%2F+query+part+for%3A+%E2%80%9Camenity%3Dbicycle_rental%E2%80%9D%0A++${nodewayrelation}%5B%22${key}%22%5D(${bbox})%3B%0A)%3B%0A%2F%2F+print+results%0Aout+body%3B%0A%3E%3B%0Aout+skel+qt%3B`;
+
+
+const fetch_overpass = await fetch(`https://serene-journey-42564.herokuapp.com/https://overpass.kumi.systems/api/interpreter?data=${overpass_query}`, {
+
+method: "GET",
+
+// Adding headers to the request
+headers: {
+  "User-agent": "development project; sam@ysli.be",
+  "X-Requested-With": "XmlHttpRequest",
+  "Access-Control-Allow-Methods": "POST",
+  "Access-Control-Allow-Origin": "*",
+}
+})
+
+const overpass_results = await fetch_overpass.json();
+
+// console.log(json);
+
+
+poi_results = osmtogeojson(overpass_results);
+
+console.log(poi_results);
+
+// current_label = selection.label;
+
+// loading_location = false;
+
+document.getElementById('map-search').disabled = false;
+  }
+  
+function submitPOI(e) {
+  console.log(e);
+  console.log(e.target);
+  var formData = new FormData(e.target);
+
+  let poi = Object.fromEntries(formData);
+
+  let poi_feature = {
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [$selected_location_store.lng, $selected_location_store.lat]
+  },
+  "properties": {
+    "mode": poi.mode,
+    "purpose": poi.purpose,
+    "passengers": poi?.passengers,
+    "carry": poi?.carry,
+  }
+}
+
+  console.log(poi);
+
+  pois.push(poi_feature);
+  console.log(poi_feature);
+  $geojson_store = pois;
+  console.log(pois);
+
+  unique = {};
+  selected_location = "";
+}
+
+function updateLocation(e) {
+
+  console.log(e);
+  console.log(center);
+
+  $map_center_store.lat = e.detail.center[1];
+  $map_center_store.lng = e.detail.center[0];
+
+  center = $map_center_store;
+
+  center = center;
+
+  $selected_location_store = center
+
+  mapComponent.setCenter(center);
+
+}
+
 </script>
 
 <svelte:head>
@@ -403,8 +604,60 @@ console.log(mode);
 {#if center?.lng}
 <div class="section-txt" id="map">
 <div class="map-wrap">
-  <Input></Input>
-  <!-- <Map
+  <!-- <Input on:updatelocation={updateLocation} selected_location={selected_location}></Input> -->
+  <!-- {JSON.stringify(selected_location)} -->
+  {#if poi_results?.type == "FeatureCollection"}
+{#each poi_results.features as feature}
+<li>{#if feature.properties?.name}{feature.properties.name}{#if feature.properties?.['addr:housenumber']}: {feature.properties['addr:housenumber']} {feature.properties['addr:street']}, {feature.properties['addr:city']}, {feature.properties['addr:state']}, {feature.properties['addr:postcode']}{:else} {feature.geometry.coordinates}{/if}{:else}{feature.geometry.coordinates}{/if}</li>
+{/each}
+{/if}
+
+<!-- {#if screenX && selected_location}
+<div style="padding: 5px; background: white; border: solid 1px black; position: absolute; z-index: 100; top:{screenY-30}px; left:{screenX+30}px;">
+<form on:submit|preventDefault={submitPOI}>
+  <label for="mode">How do you get here?</label>
+  <select name="mode" bind:value={poi_mode}>
+    <option selected="true" disabled="disabled" value="">Select mode</option>
+    <option value="walk">Walk</option>
+    <option value="bike">Bike</option>
+    <option value="drive">Drive</option>
+    <option value="carpool">Carpool</option>
+    <option value="transit">Transit</option>
+  </select>
+  {#if poi_mode}
+  <label for="purpose">What's the purpose of the trip?</label>
+  <select name="purpose" bind:value={poi_purpose}>
+    <option value="shopping">Shopping</option>
+    <option value="errands">Doing errands</option>
+    <option value="commute">Part of commute</option>
+    <option value="workplace">Where I work</option>
+    <option value="activities">Activities</option>
+  </select>
+  {/if}
+  {#if poi_purpose && poi_mode == "drive"}
+  <label for="passengers">Do you bring any passengers with you?  If so, how many?</label>
+  <select name="passengers" bind:value={poi_passengers}>
+    <option selected="true" disabled="disabled" value="">Select value</option>
+    <option value="none">None</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4 or more</option>
+  </select>
+  {#if poi_passengers}
+  <label for="carry">Do you carry anything (e.g. equipment, supplies, groceries) to/from the location?</label>
+  <select name="carry" bind:value={poi_carry}>
+    <option value="no">No</option>
+    <option value="yes">Yes</option>
+  </select>
+  {/if}
+  {/if}
+  <button type="submit">Submit</button>
+</form>
+</div>
+{/if} -->
+
+  <Map
     bind:this={mapComponent}
     accessToken={mapboxToken}
     on:recentre={recentre}
@@ -413,14 +666,14 @@ console.log(mode);
     {center}
     bind:zoom
   >
-  {#if selected_location}
-  <Marker lat={selected_location.lat} lng={selected_location.lng}></Marker>
+  {#if $selected_location_store}
+  <Marker lat={$selected_location_store.lat} lng={$selected_location_store.lng}></Marker>
+  <!-- <button id="map-search" style="position: absolute; z-index: 100; top: 2%" on:click={findMapFeatures}>Map Search</button> -->
   {/if}
   {#key unique}
   <slot></slot>
   {/key}
-
-  {#if mode == "selecting"}
+  <!-- {#if mode == "selecting"}
   <button class="mode_button" style="position: absolute; bottom: 42%; margin: auto; left: 0; display: block; left: 50%;
   -webkit-transform: translateX(-50%);
   -moz-transform: translateX(-50%);
@@ -448,9 +701,26 @@ Click a point to see nearby bikesharing and transit.
 transform: translateX(-50%);" on:click|preventDefault={function() {mode = "selecting"}} type="button">
 Select a new location
 </button>
+{/if} -->
+
+
+{#if !$selected_location_store && pois.length < 1}
+<div style="background: white; color: black; border: solid 2px black; padding: 5px; position: absolute; bottom: 35%; margin: auto; left: 0; display: block; left: 50%;
+-webkit-transform: translateX(-50%);
+-moz-transform: translateX(-50%);
+transform: translateX(-50%);">
+
+  <!-- <p class="mode_button" style="">
+  Click the map to indicate the places you most commonly go to.
+  </p> -->
+
+  {#if $selected_location_store}
+  <button id="map-search" style="" on:click={findMapFeatures}>Select location</button>
+  {/if}
+</div>
 {/if}
 
-  </Map> -->
+  </Map>
 </div>
 </div>
 {/if}

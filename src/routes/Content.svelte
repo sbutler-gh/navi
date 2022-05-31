@@ -2,12 +2,14 @@
   import { getContext } from 'svelte'
   import { contextKey } from '$lib/components.js'
   import MiniScroller from './MiniScroller.svelte'
-  import { bikeshare_transit_store, points_prompt_store, bikeshare_store, transit_store, geojson_store } from "$lib/stores.js"
+  import { map_center_store, selected_location_store, bikeshare_transit_store, points_prompt_store, bikeshare_store, transit_store, geojson_store } from "$lib/stores.js"
   import { get } from 'svelte/store';
+  import Input from "./Input.svelte"
 
   const { getMap, getMapbox } = getContext(contextKey)
   const map = getMap()
   const mapbox = getMapbox()
+  
 
   let load = false;
 
@@ -20,90 +22,30 @@
 
   if ($geojson_store) {
 
-    let geojson_array = $geojson_store.features;
+    
+    // let geojson_features = $geojson_store;
 
-    if (map.getLayer('transit-line')) {
+    console.log('yes');
 
-console.log('removing;')
-map.removeLayer('transit-line'); 
-map.removeLayer('transit-point'); 
-map.removeSource('transit-points');
-map.removeSource('transit-lines');
+    let feature_collection = {
+	"type" : "FeatureCollection",
+	"features": $geojson_store
 }
 
-    if (map.getLayer('bicycle-point')) {
-
-      console.log('removing');
-      map.removeLayer('bicycle-point'); 
-      map.removeLayer('bicycle-line'); 
-      map.removeSource('bicycle-points');
-      map.removeSource('bicycle-lines');
+    if (map.getLayer('pois')) {
+      map.removeLayer('pois'); 
+      map.removeSource('pois'); 
     }
 
-    let transit_points_data = {
-        "type": "FeatureCollection",
-        "features": geojson_array.filter(feature => feature.properties?.type != "route" && feature.properties?.amenity != "bicycle_rental" && feature.properties?.shop != "bicycle")
-    }
-
-    let transit_lines_data = {
-        "type": "FeatureCollection",
-        "features": geojson_array.filter(feature => feature.properties?.type == "route" && feature.properties?.route != "bicycle")
-    }
-
-    let bike_points_data = {
-        "type": "FeatureCollection",
-        "features": geojson_array.filter(feature => feature.properties?.type != "route" && (feature.properties?.amenity == "bicycle_rental" || feature.properties?.shop == "bicycle") )
-    }
-
-    let bike_lines_data = {
-        "type": "FeatureCollection",
-        "features": geojson_array.filter(feature => feature.properties?.type == "route" && feature.properties?.route == "bicycle")
-    }
-
-    map.addSource('transit-points', {
+  map.addSource('pois', {
     type: 'geojson',
-    data: transit_points_data
+    data: feature_collection
   })
-
-  map.addSource('transit-lines', {
-    type: 'geojson',
-    data: transit_lines_data
-  })
-
-  map.addSource('bicycle-points', {
-    type: 'geojson',
-    data: bike_points_data
-  })
-
-  map.addSource('bicycle-lines', {
-    type: 'geojson',
-    data: bike_lines_data
-  })
-
-map.addLayer({
-    'id': 'transit-line',
-    'generateid': true,
-    'type': 'line',
-    'source': 'transit-lines',
-    'layout': {
-    'line-join': 'round',
-    'line-cap': 'round'
-    },
-    'paint': {
-    'line-color': [
-      'case',
-      ['boolean', ['feature-state', 'hover'], false],
-      'yellow',
-      'indigo'
-    ],
-    'line-width': 8
-    }
-    });
 
   map.addLayer({
-'id': 'transit-point',
+'id': 'pois',
 'type': 'circle',
-'source': 'transit-points',
+'source': 'pois',
     'paint': {
       'circle-color': '#0096FF',
       'circle-radius': 6,
@@ -112,43 +54,56 @@ map.addLayer({
   },
 });
 
-map.addLayer({
-    'id': 'bicycle-line',
-    'generateid': true,
-    'type': 'line',
-    'source': 'bicycle-lines',
-    'layout': {
-    'line-join': 'round',
-    'line-cap': 'round'
-    },
-    'paint': {
-    'line-color': [
-      'case',
-      ['boolean', ['feature-state', 'hover'], false],
-      'yellow',
-      '#DE3163'
-    ],
-    'line-gap-width': 1.2,
-    'line-width': 5
-    }
-    });
-
-    map.addLayer({
-  'id': 'bicycle-point',
-  'type': 'circle',
-  'source': 'bicycle-points',
-      'paint': {
-        'circle-color': 'red',
-        'circle-radius': 6,
-        'circle-stroke-width': 1.5,
-        'circle-stroke-color': 'WHITE'
-    },
-  });
-
 }
 else {
 console.log('none yet')
 }
+
+
+map.on('mouseenter', 'pois', function () {
+    map.getCanvas().style.cursor = 'pointer'
+  })
+
+  map.on('mouseleave', 'pois', function () {
+    map.getCanvas().style.cursor = ''
+  })
+
+  map.on('click', 'pois', function (e) {
+
+console.log(e);
+const coordinates = e.lngLat;
+// const coordinates = e.features[0].geometry.coordinates.slice();
+
+// Ensure that if the map is zoomed out such that multiple
+// copies of the feature are visible, the popup appears
+// over the copy being pointed to.
+// while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+//   coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360
+// }
+
+// should be centered, but need to figure out the map dimensions first
+console.log(coordinates);
+let updated_center;
+screen.width < 600 ? updated_center = [ coordinates[0], coordinates[1] - 0.025 ] : updated_center = [ coordinates[0], coordinates[1] - 0.015 ];
+// let updated_center = [ coordinates[0], coordinates[1] - 0.015 ]
+// console.log(updated_center);
+// map.setCenter(updated_center)
+
+// There is a bug that occurs, when you have clicked on one point and are viewing the popup.  If you click on another point, while the first popup is visible, then the popup for the other point will incorrectly display.
+// So this conditional checks to see if a popup already exists on the page, and removes it if it does, to bypass that bug.  Not sure about the behavior causing the root issue — this was simpler for now.
+// if (document.getElementById('mini-scroller')) {
+//   console.log('present');
+//   document.getElementById('mini-scroller').remove();
+// }
+
+addPopup(e, coordinates);
+
+// // The miniscroller component is what appears in the popup, and we instantiate it with props from the selected point (most importantly, content) so we can show the content from that point in the popup.
+// new MiniScroller({ 
+//   target: document.getElementById('mini-scroller'), 
+//   props: { layer:e.features[0].layer.id, properties:e.features[0]._vectorTileFeature.properties, id:e.features[0]._vectorTileFeature.properties.id, shop:e.features[0]._vectorTileFeature.properties?.shop, network:e.features[0]._vectorTileFeature.properties.network, name:e.features[0]._vectorTileFeature.properties.name } 
+//  }) // eslint-disable-line no-new
+})
 
 
   map.on('mouseenter', 'bicycle-point', function () {
@@ -432,14 +387,60 @@ function addPopup(e, coordinates) {
           // The miniscroller component is what appears in the popup, and we instantiate it with props from the selected point (most importantly, content) so we can show the content from that point in the popup.
     new MiniScroller({ 
       target: document.getElementById('mini-scroller'), 
-      props: { layer:e.features[0].layer.id, properties:e.features[0]._vectorTileFeature.properties, id:e.features[0]._vectorTileFeature.properties.id, network:e.features[0]._vectorTileFeature.properties.network, name:e.features[0]._vectorTileFeature.properties.name } 
+      props: {properties:e.features[0]._vectorTileFeature.properties  } 
      }) // eslint-disable-line no-new
+}
+
+function updateLocation(e) {
+
+console.log(e);
+
+  $map_center_store.lat = e.detail.center[1];
+  $map_center_store.lng = e.detail.center[0];
+
+  $selected_location_store = $map_center_store
+
+  map.setCenter($map_center_store);
+
+// dispatch('updatelocation', {
+//   center: e.detail.result.center
+// });
+
+
+}
+
+function updateContent() {
+
+  console.log('updating content');
+
+  if (map.getLayer('pois')) {
+      map.removeLayer('pois'); 
+      map.removeSource('pois'); 
+    }
+
+  map.addSource('pois', {
+    type: 'geojson',
+    data: $geojson_store
+  })
+
+  map.addLayer({
+'id': 'pois',
+'type': 'circle',
+'source': 'pois',
+    'paint': {
+      'circle-color': '#0096FF',
+      'circle-radius': 6,
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': 'black'
+  },
+});
+
 }
 </script>
 
 {#if $geojson_store}
 
-<div style="position: absolute; background: white; top: 5%; right: 5%; display: block; padding: 10px;">
+<!-- <div style="position: absolute; background: white; top: 5%; right: 5%; display: block; padding: 10px;">
 
   <div on:input|preventDefault={toggleMapLayer}>
     {#if $geojson_store}
@@ -485,6 +486,73 @@ function addPopup(e, coordinates) {
         </svg>        
        Transit Stations</label>
     </div>
-</div>
+</div> -->
 
 {/if}
+
+<div id="input-container" style="position: absolute; background: white; display: block; padding: 10px; max-width: 330px;">
+
+  <Input on:updatecontent={updateContent} on:updatelocation={updateLocation}></Input>
+  <!-- <div on:input|preventDefault={toggleMapLayer}>
+    {#if $geojson_store}
+    <input type="checkbox" checked name="bicycle-line">
+    {/if}
+    <label for="bicycle-lines">
+      <svg style="vertical-align: text-top" width="23" height="15" viewBox="0 0 33 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 10H33" stroke="#DE3163" stroke-width="20"/>
+      <line y1="10" x2="33" y2="10" stroke="white" stroke-width="2"/>
+      </svg>
+      Bike routes</label>
+    </div>
+
+    <div on:input|preventDefault={toggleMapLayer}>
+      {#if $geojson_store}
+      <input type="checkbox" name="transit-line" checked> 
+      {/if}
+      <svg style="vertical-align: text-top" width="23" height="15" viewBox="0 0 33 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 10H33" stroke="indigo" stroke-width="20"/>
+        </svg>        
+      <label for="transit-lines">Transit lines</label>
+      </div>
+
+    <div on:input|preventDefault={toggleMapLayer}>
+      {#if $geojson_store}
+  <input type="checkbox" name="bicycle-point" checked>
+  {/if}
+  <label for="bicycle-points">
+    <svg style="vertical-align: top" width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8.5" cy="8.5" r="6.5" fill="#FF0000" stroke="white" stroke-width="2"/>
+      <circle cx="8.5" cy="8.5" r="8.4" stroke="black" stroke-width="0.2"/>
+      </svg>
+      Bikeshares + Bike shops</label>
+  </div>
+
+  <div on:input|preventDefault={toggleMapLayer}>
+    {#if $geojson_store}
+    <input type="checkbox" name="transit-point" checked>
+    {/if}
+    <label for="bicycle-points">
+      <svg style="vertical-align: top" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7.5 14.25C11.2279 14.25 14.25 11.2279 14.25 7.5C14.25 3.77208 11.2279 0.75 7.5 0.75C3.77208 0.75 0.75 3.77208 0.75 7.5C0.75 11.2279 3.77208 14.25 7.5 14.25Z" fill="#0096FF" stroke="black" stroke-width="1.5"/>
+        </svg>        
+       Transit Stations</label>
+    </div> -->
+</div>
+
+<style>
+  #input-container {
+    top: 5%; 
+    right: 5%;
+  }
+
+  @media only screen and (max-width: 600px) {
+
+  #input-container {
+    /* top: 0%; 
+    right: 0%; */
+    max-width: 250px !important;
+    top: 0;
+    left: 0;
+  }
+  }
+</style>

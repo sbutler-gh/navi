@@ -1,26 +1,16 @@
 <script>
     // export let id = "test";
-    export let content = "content should be here";
-    export let name;
-    export let network;
-    export let shop;
-    export let layer;
     export let properties;
 </script>
 
-<p style="white-space: break-spaces; max-height: 150px; overflow: auto; padding: 5px;">
-{#if network}
-{network}
-<br>
-{/if}
-{#if name}
-{name}
-{:else if layer == "bicycle-line"}
-Bike Route
-{:else if layer == "transit-line"}
-Transit Route
-{:else if layer == "transit-point"}
-Transit Station
-{/if}
-</p>
-
+<div style="max-height: 150px; overflow: auto; padding: 5px;">
+    {#if properties?.name}
+    <p style="font-weight: bold">{properties?.name}</p>
+    {/if}
+    {#if properties?.cuisine}
+    <p style="font-style: italic">{properties?.cuisine.charAt(0).toUpperCase()}{properties?.cuisine.slice(1).replace(/_/g, " ")}</p>
+    {/if}
+    {#if properties?.['addr:housenumber']}
+    <p>{properties?.['addr:housenumber']} {properties?.['addr:street']}, {properties?.['addr:city']}, {properties?.['addr:postcode']} </p>
+    {/if}
+</div>
